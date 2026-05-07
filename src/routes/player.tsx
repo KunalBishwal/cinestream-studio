@@ -13,6 +13,8 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  SkipBack,
+  SkipForward,
   StickyNote,
   Trash2,
   Volume2,
@@ -54,7 +56,7 @@ interface Bookmark {
   label: string;
 }
 
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
 
 function PlayerPage() {
   const { v: videoId, t: startTime } = Route.useSearch();
@@ -409,8 +411,22 @@ function PlayerPage() {
 
               {/* Controls */}
               <div className="flex flex-wrap items-center gap-2">
+                <NeonButton size="icon" onClick={() => seek(state.currentTime - 10)} aria-label="Rewind 10 seconds" title="Rewind 10s">
+                  <div className="relative">
+                    <SkipBack className="h-4 w-4" />
+                    <span className="absolute -bottom-1 -right-1 text-[7px] font-bold leading-none">10</span>
+                  </div>
+                </NeonButton>
+
                 <NeonButton size="icon" onClick={togglePlay} aria-label={state.isPlaying ? "Pause" : "Play"}>
                   {state.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </NeonButton>
+
+                <NeonButton size="icon" onClick={() => seek(state.currentTime + 10)} aria-label="Forward 10 seconds" title="Forward 10s">
+                  <div className="relative">
+                    <SkipForward className="h-4 w-4" />
+                    <span className="absolute -bottom-1 -right-1 text-[7px] font-bold leading-none">10</span>
+                  </div>
                 </NeonButton>
 
                 <div className="flex items-center gap-2">
@@ -470,12 +486,18 @@ function PlayerPage() {
                 </div>
 
                 <div className="ml-auto flex items-center gap-2">
-                  <NeonButton size="icon" onClick={rotateLeft} aria-label="Rotate left">
-                    <RotateCcw className="h-4 w-4" />
-                  </NeonButton>
-                  <NeonButton size="icon" onClick={rotateRight} aria-label="Rotate right">
-                    <RotateCw className="h-4 w-4" />
-                  </NeonButton>
+                  <div className="flex items-center gap-0.5 rounded-lg bg-white/5 border border-white/10 p-1">
+                    <span className="hidden sm:inline-block pl-2 pr-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">Rotate</span>
+                    <NeonButton size="sm" onClick={rotateLeft} aria-label="Rotate left 90°" title="Rotate left 90°" className="h-7 px-2 bg-transparent border-0 hover:bg-white/10">
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                      <span className="text-[10px]">90°</span>
+                    </NeonButton>
+                    <NeonButton size="sm" onClick={rotateRight} aria-label="Rotate right 90°" title="Rotate right 90°" className="h-7 px-2 bg-transparent border-0 hover:bg-white/10">
+                      <span className="text-[10px]">90°</span>
+                      <RotateCw className="h-3.5 w-3.5 ml-1" />
+                    </NeonButton>
+                  </div>
+                  <div className="hidden sm:block h-4 w-px bg-white/10 mx-1" />
                   <NeonButton size="icon" onClick={addBookmark} aria-label="Add bookmark">
                     <BookmarkPlus className="h-4 w-4" />
                   </NeonButton>
