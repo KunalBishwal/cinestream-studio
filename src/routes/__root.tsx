@@ -72,19 +72,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "RotateTube — Cinematic YouTube Player for Students" },
+      {
+        name: "description",
+        content:
+          "Paste any YouTube link and watch it in a cinematic, glassmorphism player with rotation, notes, bookmarks, and keyboard shortcuts.",
+      },
+      { name: "author", content: "RotateTube" },
+      { property: "og:title", content: "RotateTube — Cinematic YouTube Player" },
+      {
+        property: "og:description",
+        content:
+          "A premium, distraction-free YouTube viewer for lectures and study sessions.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap",
       },
     ],
   }),
