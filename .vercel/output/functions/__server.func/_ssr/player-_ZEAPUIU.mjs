@@ -1,8 +1,8 @@
 import { r as reactExports, j as jsxRuntimeExports } from "../_libs/react.mjs";
 import { L as Link } from "../_libs/tanstack__react-router.mjs";
 import { f as fetchOEmbed, u as upsertHistory, a as formatTime, N as NeonButton, c as cn } from "./NeonButton-CMvBjjog.mjs";
-import { R as Route$1 } from "./router-3YlokmJk.mjs";
-import { A as ArrowLeft, K as Keyboard, P as Play, S as SkipBack, a as Pause, b as SkipForward, V as VolumeX, c as Volume2, G as Gauge, R as RotateCcw, d as RotateCw, B as BookmarkPlus, e as StickyNote, E as Expand, M as Maximize2, f as Bookmark, X, T as Trash2 } from "../_libs/lucide-react.mjs";
+import { R as Route$1 } from "./router-BWBFRo4-.mjs";
+import { A as ArrowLeft, K as Keyboard, P as Play, S as SkipBack, a as Pause, b as SkipForward, V as VolumeX, c as Volume2, G as Gauge, C as Check, d as Settings, R as RotateCcw, e as RotateCw, B as BookmarkPlus, f as StickyNote, E as Expand, M as Maximize2, g as Bookmark, X, T as Trash2 } from "../_libs/lucide-react.mjs";
 import { m as motion, A as AnimatePresence } from "../_libs/framer-motion.mjs";
 import "../_libs/tanstack__router-core.mjs";
 import "../_libs/tanstack__history.mjs";
@@ -41,9 +41,35 @@ function loadYouTubeAPI() {
   });
   return apiPromise;
 }
+const QUALITY_LABELS = {
+  highres: "4K+",
+  hd2160: "2160p",
+  hd1440: "1440p",
+  hd1080: "1080p",
+  hd720: "720p",
+  large: "480p",
+  medium: "360p",
+  small: "240p",
+  tiny: "144p",
+  auto: "Auto"
+};
+function getIframeVideoElement(containerId) {
+  try {
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+    const iframe = container.tagName === "IFRAME" ? container : container.querySelector("iframe");
+    if (!iframe) return null;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return null;
+    return doc.querySelector("video");
+  } catch {
+    return null;
+  }
+}
 function useYouTubePlayer(containerId, videoId) {
   const playerRef = reactExports.useRef(null);
   const rafRef = reactExports.useRef(null);
+  const desiredRateRef = reactExports.useRef(1);
   const [state, setState] = reactExports.useState({
     ready: false,
     isPlaying: false,
@@ -51,7 +77,10 @@ function useYouTubePlayer(containerId, videoId) {
     duration: 0,
     volume: 100,
     muted: false,
-    playbackRate: 1
+    playbackRate: 1,
+    availableSpeeds: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+    quality: "auto",
+    availableQualities: []
   });
   reactExports.useEffect(() => {
     if (!videoId) return;
@@ -72,26 +101,39 @@ function useYouTubePlayer(containerId, videoId) {
         },
         events: {
           onReady: (e) => {
+            const availRates = e.target.getAvailablePlaybackRates?.() || [1];
+            const availQ = e.target.getAvailableQualityLevels?.() || [];
             setState((s) => ({
               ...s,
               ready: true,
               duration: e.target.getDuration() || 0,
               volume: e.target.getVolume(),
               muted: e.target.isMuted(),
-              playbackRate: e.target.getPlaybackRate()
+              playbackRate: e.target.getPlaybackRate(),
+              availableSpeeds: availRates,
+              quality: e.target.getPlaybackQuality?.() || "auto",
+              availableQualities: availQ.filter((q) => q !== "auto")
             }));
           },
           onStateChange: (e) => {
             const YT = window.YT;
             const playing = e.data === YT.PlayerState.PLAYING;
+            const availQ = e.target.getAvailableQualityLevels?.() || [];
             setState((s) => ({
               ...s,
               isPlaying: playing,
-              duration: e.target.getDuration() || s.duration
+              duration: e.target.getDuration() || s.duration,
+              quality: e.target.getPlaybackQuality?.() || s.quality,
+              availableQualities: availQ.length > 0 ? availQ.filter((q) => q !== "auto") : s.availableQualities
             }));
           },
           onPlaybackRateChange: (e) => {
-            setState((s) => ({ ...s, playbackRate: e.data }));
+            if (desiredRateRef.current <= 2) {
+              setState((s) => ({ ...s, playbackRate: e.data }));
+            }
+          },
+          onPlaybackQualityChange: (e) => {
+            setState((s) => ({ ...s, quality: e.data }));
           }
         }
       });
@@ -103,6 +145,7 @@ function useYouTubePlayer(containerId, videoId) {
       } catch {
       }
       playerRef.current = null;
+      desiredRateRef.current = 1;
       setState({
         ready: false,
         isPlaying: false,
@@ -110,7 +153,10 @@ function useYouTubePlayer(containerId, videoId) {
         duration: 0,
         volume: 100,
         muted: false,
-        playbackRate: 1
+        playbackRate: 1,
+        availableSpeeds: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+        quality: "auto",
+        availableQualities: []
       });
     };
   }, [videoId, containerId]);
@@ -156,7 +202,37 @@ function useYouTubePlayer(containerId, videoId) {
     }
   }, []);
   const setPlaybackRate = reactExports.useCallback((r) => {
-    playerRef.current?.setPlaybackRate?.(r);
+    desiredRateRef.current = r;
+    const p = playerRef.current;
+    if (!p) return;
+    if (r <= 2) {
+      p.setPlaybackRate?.(r);
+      setState((s) => ({ ...s, playbackRate: r }));
+    } else {
+      p.setPlaybackRate?.(2);
+      const trySetVideoRate = () => {
+        const videoEl = getIframeVideoElement(containerId);
+        if (videoEl) {
+          videoEl.playbackRate = r;
+          setState((s) => ({ ...s, playbackRate: r }));
+          return true;
+        }
+        return false;
+      };
+      if (!trySetVideoRate()) {
+        setTimeout(() => {
+          if (!trySetVideoRate()) {
+            setState((s) => ({ ...s, playbackRate: 2 }));
+          }
+        }, 200);
+      }
+    }
+  }, [containerId]);
+  const setQuality = reactExports.useCallback((q) => {
+    const p = playerRef.current;
+    if (!p) return;
+    p.setPlaybackQuality?.(q);
+    setState((s) => ({ ...s, quality: q }));
   }, []);
   return {
     state,
@@ -166,7 +242,8 @@ function useYouTubePlayer(containerId, videoId) {
     seek,
     setVolume,
     toggleMute,
-    setPlaybackRate
+    setPlaybackRate,
+    setQuality
   };
 }
 function useKeyboardShortcuts(handler, enabled = true) {
@@ -205,7 +282,7 @@ function useLocalStorage(key, initial) {
   const reset = reactExports.useCallback(() => setValue(initial), [initial]);
   return [value, setValue, reset];
 }
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
 function PlayerPage() {
   const {
     v: videoId,
@@ -217,6 +294,7 @@ function PlayerPage() {
   const [rotation, setRotation] = reactExports.useState(0);
   const [theater, setTheater] = reactExports.useState(false);
   const [showSpeed, setShowSpeed] = reactExports.useState(false);
+  const [showQuality, setShowQuality] = reactExports.useState(false);
   const [showNotes, setShowNotes] = reactExports.useState(false);
   const [showBookmarks, setShowBookmarks] = reactExports.useState(false);
   const [showHints, setShowHints] = reactExports.useState(false);
@@ -232,7 +310,8 @@ function PlayerPage() {
     seek,
     setVolume,
     toggleMute,
-    setPlaybackRate
+    setPlaybackRate,
+    setQuality
   } = useYouTubePlayer(containerId, videoId);
   const [notes, setNotes] = useLocalStorage(`rotatetube:notes:${videoId}`, "");
   const [bookmarks, setBookmarks] = useLocalStorage(`rotatetube:bookmarks:${videoId}`, []);
@@ -304,6 +383,14 @@ function PlayerPage() {
     }]);
   }, [state.currentTime, setBookmarks]);
   const removeBookmark = reactExports.useCallback((id) => setBookmarks((prev) => prev.filter((b) => b.id !== id)), [setBookmarks]);
+  reactExports.useEffect(() => {
+    const handleClick = () => {
+      setShowSpeed(false);
+      setShowQuality(false);
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
   useKeyboardShortcuts(reactExports.useCallback((e) => {
     switch (e.key) {
       case " ":
@@ -435,28 +522,89 @@ function PlayerPage() {
                 /* @__PURE__ */ jsxRuntimeExports.jsx(NeonButton, { size: "icon", onClick: toggleMute, "aria-label": state.muted ? "Unmute" : "Mute", children: state.muted || state.volume === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(VolumeX, { className: "h-4 w-4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { className: "h-4 w-4" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "range", min: 0, max: 100, value: state.muted ? 0 : state.volume, onChange: (e) => setVolume(parseInt(e.target.value, 10)), "aria-label": "Volume", className: "hidden h-1 w-24 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary sm:block" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonButton, { size: "sm", onClick: () => setShowSpeed((v) => !v), active: state.playbackRate !== 1, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", onClick: (e) => e.stopPropagation(), children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonButton, { size: "sm", onClick: () => {
+                  setShowSpeed((v) => !v);
+                  setShowQuality(false);
+                }, active: state.playbackRate !== 1, children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Gauge, { className: "h-3.5 w-3.5" }),
                   state.playbackRate,
                   "×"
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: showSpeed && /* @__PURE__ */ jsxRuntimeExports.jsx(motion.div, { initial: {
+                /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: showSpeed && /* @__PURE__ */ jsxRuntimeExports.jsxs(motion.div, { initial: {
                   opacity: 0,
-                  y: 8
+                  y: 8,
+                  scale: 0.95
                 }, animate: {
                   opacity: 1,
-                  y: 0
+                  y: 0,
+                  scale: 1
                 }, exit: {
                   opacity: 0,
-                  y: 8
-                }, className: "glass-card absolute bottom-full left-0 z-20 mb-2 flex flex-col gap-0.5 p-1", children: SPEEDS.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => {
-                  setPlaybackRate(s);
+                  y: 8,
+                  scale: 0.95
+                }, transition: {
+                  duration: 0.15
+                }, className: "absolute bottom-full left-0 z-30 mb-2 min-w-[140px] overflow-hidden rounded-xl border border-white/15 bg-[#1a1a2e]/95 p-1 shadow-2xl backdrop-blur-xl", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40", children: "Playback Speed" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "max-h-[280px] overflow-y-auto scrollbar-thin", children: SPEEDS.map((s) => {
+                    const isActive = s === state.playbackRate;
+                    const isHighSpeed = s > 2;
+                    return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => {
+                      setPlaybackRate(s);
+                      setShowSpeed(false);
+                    }, className: cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all", isActive ? "bg-primary/20 text-primary" : "text-white/80 hover:bg-white/10 hover:text-white"), children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
+                        s === 1 ? "Normal" : `${s}×`,
+                        isHighSpeed && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold text-amber-400", children: "β" })
+                      ] }),
+                      isActive && /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "h-3.5 w-3.5 text-primary" })
+                    ] }, s);
+                  }) })
+                ] }) })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", onClick: (e) => e.stopPropagation(), children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonButton, { size: "sm", onClick: () => {
+                  setShowQuality((v) => !v);
                   setShowSpeed(false);
-                }, className: cn("rounded-md px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10", s === state.playbackRate && "text-primary"), children: [
-                  s,
-                  "×"
-                ] }, s)) }) })
+                }, active: state.quality !== "auto" && state.quality !== "", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Settings, { className: "h-3.5 w-3.5" }),
+                  QUALITY_LABELS[state.quality] || state.quality || "Auto"
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: showQuality && /* @__PURE__ */ jsxRuntimeExports.jsxs(motion.div, { initial: {
+                  opacity: 0,
+                  y: 8,
+                  scale: 0.95
+                }, animate: {
+                  opacity: 1,
+                  y: 0,
+                  scale: 1
+                }, exit: {
+                  opacity: 0,
+                  y: 8,
+                  scale: 0.95
+                }, transition: {
+                  duration: 0.15
+                }, className: "absolute bottom-full left-0 z-30 mb-2 min-w-[140px] overflow-hidden rounded-xl border border-white/15 bg-[#1a1a2e]/95 p-1 shadow-2xl backdrop-blur-xl", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40", children: "Video Quality" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => {
+                    setQuality("auto");
+                    setShowQuality(false);
+                  }, className: cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all", state.quality === "auto" || state.quality === "" ? "bg-primary/20 text-primary" : "text-white/80 hover:bg-white/10 hover:text-white"), children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Auto" }),
+                    (state.quality === "auto" || state.quality === "") && /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "h-3.5 w-3.5 text-primary" })
+                  ] }),
+                  state.availableQualities.length > 0 ? state.availableQualities.map((q) => {
+                    const isActive = q === state.quality;
+                    return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => {
+                      setQuality(q);
+                      setShowQuality(false);
+                    }, className: cn("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all", isActive ? "bg-primary/20 text-primary" : "text-white/80 hover:bg-white/10 hover:text-white"), children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: QUALITY_LABELS[q] || q }),
+                      isActive && /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "h-3.5 w-3.5 text-primary" })
+                    ] }, q);
+                  }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-3 py-2 text-[11px] text-white/40", children: "Start playing to see options" })
+                ] }) })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-auto flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 rounded-lg bg-white/5 border border-white/10 p-1", children: [

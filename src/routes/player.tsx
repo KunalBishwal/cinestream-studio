@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkPlus,
+  Check,
+  ChevronRight,
   Expand,
   Gauge,
   Keyboard,
@@ -13,6 +15,7 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  Settings,
   SkipBack,
   SkipForward,
   StickyNote,
@@ -23,6 +26,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
+import { QUALITY_LABELS } from "@/hooks/useYouTubePlayer";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { fetchOEmbed, formatTime } from "@/lib/youtube";
@@ -56,7 +60,7 @@ interface Bookmark {
   label: string;
 }
 
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
+const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4];
 
 function PlayerPage() {
   const { v: videoId, t: startTime } = Route.useSearch();
@@ -68,6 +72,7 @@ function PlayerPage() {
   const [rotation, setRotation] = useState(0);
   const [theater, setTheater] = useState(false);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [showQuality, setShowQuality] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showHints, setShowHints] = useState(false);
@@ -87,6 +92,7 @@ function PlayerPage() {
     setVolume,
     toggleMute,
     setPlaybackRate,
+    setQuality,
   } = useYouTubePlayer(containerId, videoId);
 
   const [notes, setNotes] = useLocalStorage<string>(
@@ -197,6 +203,16 @@ function PlayerPage() {
     (id: string) => setBookmarks((prev) => prev.filter((b) => b.id !== id)),
     [setBookmarks],
   );
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClick = () => {
+      setShowSpeed(false);
+      setShowQuality(false);
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
 
   // Keyboard shortcuts
   useKeyboardShortcuts(
@@ -448,10 +464,10 @@ function PlayerPage() {
                   />
                 </div>
 
-                <div className="relative">
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <NeonButton
                     size="sm"
-                    onClick={() => setShowSpeed((v) => !v)}
+                    onClick={() => { setShowSpeed((v) => !v); setShowQuality(false); }}
                     active={state.playbackRate !== 1}
                   >
                     <Gauge className="h-3.5 w-3.5" />
@@ -460,26 +476,114 @@ function PlayerPage() {
                   <AnimatePresence>
                     {showSpeed && (
                       <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 8 }}
-                        className="glass-card absolute bottom-full left-0 z-20 mb-2 flex flex-col gap-0.5 p-1"
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute bottom-full left-0 z-30 mb-2 min-w-[140px] overflow-hidden rounded-xl border border-white/15 bg-[#1a1a2e]/95 p-1 shadow-2xl backdrop-blur-xl"
                       >
-                        {SPEEDS.map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => {
-                              setPlaybackRate(s);
-                              setShowSpeed(false);
-                            }}
-                            className={cn(
-                              "rounded-md px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10",
-                              s === state.playbackRate && "text-primary",
-                            )}
-                          >
-                            {s}×
-                          </button>
-                        ))}
+                        <div className="mb-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+                          Playback Speed
+                        </div>
+                        <div className="max-h-[280px] overflow-y-auto scrollbar-thin">
+                          {SPEEDS.map((s) => {
+                            const isActive = s === state.playbackRate;
+                            const isHighSpeed = s > 2;
+                            return (
+                              <button
+                                key={s}
+                                onClick={() => {
+                                  setPlaybackRate(s);
+                                  setShowSpeed(false);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all",
+                                  isActive
+                                    ? "bg-primary/20 text-primary"
+                                    : "text-white/80 hover:bg-white/10 hover:text-white",
+                                )}
+                              >
+                                <span className="flex items-center gap-2">
+                                  {s === 1 ? "Normal" : `${s}×`}
+                                  {isHighSpeed && (
+                                    <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold text-amber-400">
+                                      β
+                                    </span>
+                                  )}
+                                </span>
+                                {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <NeonButton
+                    size="sm"
+                    onClick={() => { setShowQuality((v) => !v); setShowSpeed(false); }}
+                    active={state.quality !== 'auto' && state.quality !== ''}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    {QUALITY_LABELS[state.quality] || state.quality || 'Auto'}
+                  </NeonButton>
+                  <AnimatePresence>
+                    {showQuality && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute bottom-full left-0 z-30 mb-2 min-w-[140px] overflow-hidden rounded-xl border border-white/15 bg-[#1a1a2e]/95 p-1 shadow-2xl backdrop-blur-xl"
+                      >
+                        <div className="mb-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+                          Video Quality
+                        </div>
+                        <button
+                          onClick={() => {
+                            setQuality('auto');
+                            setShowQuality(false);
+                          }}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all",
+                            (state.quality === 'auto' || state.quality === '')
+                              ? "bg-primary/20 text-primary"
+                              : "text-white/80 hover:bg-white/10 hover:text-white",
+                          )}
+                        >
+                          <span>Auto</span>
+                          {(state.quality === 'auto' || state.quality === '') && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </button>
+                        {state.availableQualities.length > 0 ? (
+                          state.availableQualities.map((q) => {
+                            const isActive = q === state.quality;
+                            return (
+                              <button
+                                key={q}
+                                onClick={() => {
+                                  setQuality(q);
+                                  setShowQuality(false);
+                                }}
+                                className={cn(
+                                  "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-all",
+                                  isActive
+                                    ? "bg-primary/20 text-primary"
+                                    : "text-white/80 hover:bg-white/10 hover:text-white",
+                                )}
+                              >
+                                <span>{QUALITY_LABELS[q] || q}</span>
+                                {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="px-3 py-2 text-[11px] text-white/40">
+                            Start playing to see options
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>

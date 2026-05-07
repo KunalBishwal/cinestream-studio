@@ -1,7 +1,7 @@
 import { r as reactExports, j as jsxRuntimeExports } from "../_libs/react.mjs";
 import { d as useNavigate, L as Link } from "../_libs/tanstack__react-router.mjs";
 import { g as getHistory, N as NeonButton, e as extractVideoId, r as removeHistory } from "./NeonButton-CMvBjjog.mjs";
-import { d as RotateCw, g as Sparkles, h as ArrowRight, P as Play, H as History, T as Trash2 } from "../_libs/lucide-react.mjs";
+import { e as RotateCw, h as Sparkles, i as ArrowRight, P as Play, H as History, T as Trash2 } from "../_libs/lucide-react.mjs";
 import { m as motion } from "../_libs/framer-motion.mjs";
 import "../_libs/tanstack__router-core.mjs";
 import "../_libs/tanstack__history.mjs";
