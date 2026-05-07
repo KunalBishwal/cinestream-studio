@@ -68,6 +68,8 @@ function PlayerPage() {
   const containerId = "yt-player";
   const stageRef = useRef<HTMLDivElement>(null);
   const stageInnerRef = useRef<HTMLDivElement>(null);
+  const speedRef = useRef<HTMLDivElement>(null);
+  const qualityRef = useRef<HTMLDivElement>(null);
 
   const [rotation, setRotation] = useState(0);
   const [theater, setTheater] = useState(false);
@@ -204,14 +206,18 @@ function PlayerPage() {
     [setBookmarks],
   );
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside (mousedown avoids race with React synthetic events)
   useEffect(() => {
-    const handleClick = () => {
-      setShowSpeed(false);
-      setShowQuality(false);
+    const handleMouseDown = (e: MouseEvent) => {
+      if (speedRef.current && !speedRef.current.contains(e.target as Node)) {
+        setShowSpeed(false);
+      }
+      if (qualityRef.current && !qualityRef.current.contains(e.target as Node)) {
+        setShowQuality(false);
+      }
     };
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, []);
 
   // Keyboard shortcuts
@@ -464,7 +470,7 @@ function PlayerPage() {
                   />
                 </div>
 
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div className="relative" ref={speedRef}>
                   <NeonButton
                     size="sm"
                     onClick={() => { setShowSpeed((v) => !v); setShowQuality(false); }}
@@ -521,7 +527,7 @@ function PlayerPage() {
                   </AnimatePresence>
                 </div>
 
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div className="relative" ref={qualityRef}>
                   <NeonButton
                     size="sm"
                     onClick={() => { setShowQuality((v) => !v); setShowSpeed(false); }}

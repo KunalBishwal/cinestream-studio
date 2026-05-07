@@ -1,7 +1,7 @@
 import { r as reactExports, j as jsxRuntimeExports } from "../_libs/react.mjs";
 import { L as Link } from "../_libs/tanstack__react-router.mjs";
 import { f as fetchOEmbed, u as upsertHistory, a as formatTime, N as NeonButton, c as cn } from "./NeonButton-CMvBjjog.mjs";
-import { R as Route$1 } from "./router-BWBFRo4-.mjs";
+import { R as Route$1 } from "./router-HMYgPWaY.mjs";
 import { A as ArrowLeft, K as Keyboard, P as Play, S as SkipBack, a as Pause, b as SkipForward, V as VolumeX, c as Volume2, G as Gauge, C as Check, d as Settings, R as RotateCcw, e as RotateCw, B as BookmarkPlus, f as StickyNote, E as Expand, M as Maximize2, g as Bookmark, X, T as Trash2 } from "../_libs/lucide-react.mjs";
 import { m as motion, A as AnimatePresence } from "../_libs/framer-motion.mjs";
 import "../_libs/tanstack__router-core.mjs";
@@ -291,6 +291,8 @@ function PlayerPage() {
   const containerId = "yt-player";
   const stageRef = reactExports.useRef(null);
   const stageInnerRef = reactExports.useRef(null);
+  const speedRef = reactExports.useRef(null);
+  const qualityRef = reactExports.useRef(null);
   const [rotation, setRotation] = reactExports.useState(0);
   const [theater, setTheater] = reactExports.useState(false);
   const [showSpeed, setShowSpeed] = reactExports.useState(false);
@@ -384,12 +386,16 @@ function PlayerPage() {
   }, [state.currentTime, setBookmarks]);
   const removeBookmark = reactExports.useCallback((id) => setBookmarks((prev) => prev.filter((b) => b.id !== id)), [setBookmarks]);
   reactExports.useEffect(() => {
-    const handleClick = () => {
-      setShowSpeed(false);
-      setShowQuality(false);
+    const handleMouseDown = (e) => {
+      if (speedRef.current && !speedRef.current.contains(e.target)) {
+        setShowSpeed(false);
+      }
+      if (qualityRef.current && !qualityRef.current.contains(e.target)) {
+        setShowQuality(false);
+      }
     };
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, []);
   useKeyboardShortcuts(reactExports.useCallback((e) => {
     switch (e.key) {
@@ -522,7 +528,7 @@ function PlayerPage() {
                 /* @__PURE__ */ jsxRuntimeExports.jsx(NeonButton, { size: "icon", onClick: toggleMute, "aria-label": state.muted ? "Unmute" : "Mute", children: state.muted || state.volume === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(VolumeX, { className: "h-4 w-4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { className: "h-4 w-4" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "range", min: 0, max: 100, value: state.muted ? 0 : state.volume, onChange: (e) => setVolume(parseInt(e.target.value, 10)), "aria-label": "Volume", className: "hidden h-1 w-24 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary sm:block" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", onClick: (e) => e.stopPropagation(), children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", ref: speedRef, children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonButton, { size: "sm", onClick: () => {
                   setShowSpeed((v) => !v);
                   setShowQuality(false);
@@ -563,7 +569,7 @@ function PlayerPage() {
                   }) })
                 ] }) })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", onClick: (e) => e.stopPropagation(), children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", ref: qualityRef, children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonButton, { size: "sm", onClick: () => {
                   setShowQuality((v) => !v);
                   setShowSpeed(false);

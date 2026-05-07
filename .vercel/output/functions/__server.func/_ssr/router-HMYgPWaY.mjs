@@ -112,7 +112,7 @@ function RootComponent() {
   const { queryClient } = Route$2.useRouteContext();
   return /* @__PURE__ */ jsxRuntimeExports.jsx(QueryClientProvider, { client: queryClient, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) });
 }
-const $$splitComponentImporter$1 = () => import("./player-_ZEAPUIU.mjs");
+const $$splitComponentImporter$1 = () => import("./player-CHav_lBU.mjs");
 const searchSchema = objectType({
   v: stringType().min(1),
   t: numberType().optional()
