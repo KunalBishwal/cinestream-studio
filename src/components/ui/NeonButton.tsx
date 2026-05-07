@@ -1,8 +1,8 @@
-import { motion } from "framer-motion";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 
-interface NeonButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+interface NeonButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
   children: ReactNode;
   variant?: "primary" | "ghost" | "accent";
   size?: "sm" | "md" | "icon";
