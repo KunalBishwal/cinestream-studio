@@ -58,7 +58,6 @@ const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 function PlayerPage() {
   const { v: videoId, t: startTime } = Route.useSearch();
-  const navigate = useNavigate();
 
   const containerId = "yt-player";
   const stageRef = useRef<HTMLDivElement>(null);
